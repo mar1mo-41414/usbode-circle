@@ -118,6 +118,16 @@ void ConfigService::SetFlatFileList(bool value)
     m_config->SetNumber("flat_file_list", value ? 1 : 0);
 }
 
+bool ConfigService::GetBLEEnabled(bool defaultValue)
+{
+    return m_config->GetNumber("bleenabled", defaultValue ? 1 : 0) != 0;
+}
+
+void ConfigService::SetBLEEnabled(bool value)
+{
+    m_config->SetNumber("bleenabled", value ? 1 : 0);
+}
+
 const char* ConfigService::GetCurrentImage(const char* defaultValue)
 {
     return m_config->GetString("current_image", defaultValue);

@@ -30,6 +30,7 @@
 #include <devicestate/devicestate.h>
 #include <circle/logger.h>
 #include <displayservice/displayservice.h>
+#include <bleservice/bleservice.h>
 #include <configservice/configservice.h>
 #include <setupstatus/setupstatus.h>
 #include <upgradestatus/upgradestatus.h>
@@ -351,6 +352,23 @@ TShutdownMode CKernel::Run(void)
 
     new SCSITBService();
     LOGNOTE("Started SCSITB service");
+
+    // BLE serial (Nordic UART Service) console for switching images without WiFi.
+    // Takes over the PL011 (UART0) for the onboard BT controller, so it is
+    // skipped when serial logging is in use (logdev=ttyS1).
+    if (config->GetBLEEnabled())
+    {
+        const char *pLogDevice = m_Options.GetLogDevice();
+        if (pLogDevice != nullptr && strncmp(pLogDevice, "ttyS", 4) == 0)
+        {
+            LOGWARN("BLE disabled: PL011 UART is in use as log device (logdev=%s)", pLogDevice);
+        }
+        else
+        {
+            new CBLEService();
+            LOGNOTE("Started BLE service");
+        }
+    }
 
     // Start display services for normal running mode
     const char *displayType = config->GetDisplayHat();

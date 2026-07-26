@@ -66,7 +66,7 @@ endif
 USBODE_ADDONS = sdcardservice cdromservice scsitbservice usbcdgadget \
                 shutdown usbmsdgadget \
 				lzma zlib zstd libchdr discimage mdsparser cueparser filelogdaemon \
-                webserver ftpserver configservice libsh1106 libssd1306 displayservice cdplayer \
+                webserver ftpserver bleservice configservice libsh1106 libssd1306 displayservice cdplayer \
                 upgradestatus setupstatus discart tracelab
 
 # Only the Circle addons we actually need
@@ -82,6 +82,23 @@ USBCDGADGET_CPPFLAGS = -DUSB_GADGET_VENDOR_ID=0x04da -DUSB_GADGET_DEVICE_ID_CD=0
 
 .PHONY: $(USBODE_ADDONS) $(CIRCLE_ADDONS) dist-single multi-arch package release\
 	 show-build-info rebuild show-config all-32 all-64 multi-arch-64 package-both
+
+# Bluetooth controller patch firmware (.hcd) for the BLE service.
+# Downloaded at build time (like the WLAN blobs) since Circle removed these
+# files from its tree for licensing reasons.
+BT_FIRMWARE_DIR = firmware-bt
+BT_FIRMWARE_FILES = BCM43430A1.hcd BCM43430B0.hcd BCM4345C0.hcd
+BT_FIRMWARE_URL = https://github.com/RPi-Distro/bluez-firmware/raw/master/broadcom
+
+.PHONY: bt-firmware
+bt-firmware:
+	@mkdir -p $(BT_FIRMWARE_DIR)
+	@for f in $(BT_FIRMWARE_FILES); do \
+		if [ ! -f "$(BT_FIRMWARE_DIR)/$$f" ]; then \
+			echo "Downloading BT firmware $$f..."; \
+			curl -fL --retry 5 -o "$(BT_FIRMWARE_DIR)/$$f" "$(BT_FIRMWARE_URL)/$$f" || exit 1; \
+		fi; \
+	done
 
 # Generate build info once per build process
 generate-buildinfo:
@@ -247,7 +264,7 @@ dist-single: check-vars kernel clean-dist generate-buildinfo
 	# Call the existing dist target (without kernel dependency)
 	@$(MAKE) dist-files ARCH_MODE=$(ARCH_MODE)
 
-dist-files:
+dist-files: bt-firmware
 	@echo "Creating distribution package ($(ARCH_MODE)-bit)..."
 	@echo "Platform Specific Builds Complete Successfully, copying general files to $(CURRENT_DIST_DIR)"
 	@mkdir -p $(CURRENT_DIST_DIR)
@@ -280,6 +297,9 @@ dist-files:
 	# Copy firmware files
 	cp $(CIRCLEHOME)/addon/wlan/firmware/* $(CURRENT_DIST_DIR)/firmware/
 	rm -f $(CURRENT_DIST_DIR)/firmware/Makefile
+
+	# Copy Bluetooth controller firmware (for the BLE service)
+	cp $(BT_FIRMWARE_DIR)/*.hcd $(CURRENT_DIST_DIR)/firmware/
 	
 	# Copy boot files
 	mkdir -p $(CURRENT_DIST_DIR)/overlays

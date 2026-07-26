@@ -40,6 +40,8 @@ public:
     const char* GetSoundDev(const char* defaultValue="none");
     const char* GetTheme(const char *defaultValue="default");
     bool GetFlatFileList(bool defaultValue = false);
+    bool GetBLEEnabled(bool defaultValue = true);
+    void SetBLEEnabled(bool value);
 
     void SetLogfile(const char* value);
     void SetFlatFileList(bool value);
